@@ -47,7 +47,7 @@ fn line_polygon(words: &[RotatedRect]) -> Vec<Point> {
     let floor_point = |p: PointF| Point::from_yx(p.y as i32, p.x as i32);
 
     // Add points from top edges, in left-to-right order.
-    for word_rect in words.iter() {
+    for word_rect in words {
         let (left, right) = (
             downwards_line(leftmost_edge(word_rect)),
             downwards_line(rightmost_edge(word_rect)),
@@ -157,14 +157,12 @@ fn polygon_slice_bounding_rect(
             let trunc_edge_start = e
                 .to_f32()
                 .y_for_x(min_x as f32)
-                .map(|y| Point::from_yx(y.round() as i32, min_x))
-                .unwrap_or(e.start);
+                .map_or(e.start, |y| Point::from_yx(y.round() as i32, min_x));
 
             let trunc_edge_end = e
                 .to_f32()
                 .y_for_x(max_x as f32)
-                .map(|y| Point::from_yx(y.round() as i32, max_x))
-                .unwrap_or(e.end);
+                .map_or(e.end, |y| Point::from_yx(y.round() as i32, max_x));
 
             Some(Line::from_endpoints(trunc_edge_start, trunc_edge_end))
         })
@@ -367,10 +365,9 @@ impl TextRecognizer {
         fn resized_line_width(orig_width: i32, orig_height: i32, height: i32) -> u32 {
             // Min/max widths for resized line images. These must match the PyTorch
             // `HierTextRecognition` dataset loader.
-            let min_width = 10.;
-            let max_width = 800.;
+            let (min_width, max_width) = (10., 800.);
             let aspect_ratio = orig_width as f32 / orig_height as f32;
-            (height as f32 * aspect_ratio).max(min_width).min(max_width) as u32
+            (height as f32 * aspect_ratio).clamp(min_width, max_width) as u32
         }
 
         // Group lines into batches which will have similar widths after resizing
